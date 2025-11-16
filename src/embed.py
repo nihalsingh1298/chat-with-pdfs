@@ -1,46 +1,25 @@
-import os
-import chromadb
-from chromadb.config import Settings
-from langchain_community.embeddings import OllamaEmbeddings
+import requests
+import json
 
-class Embedder:
-    def __init__(self, persist_directory="chroma_db"):
-        # Connect to local ChromaDB
-        self.chroma_client = chromadb.Client(Settings(
-            chroma_db_impl="duckdb+parquet",
-            persist_directory=persist_directory
-        ))
+OLLAMA_URL = "http://localhost:11434/api/embeddings"
+MODEL = "mistral"   # change to the model you use for embeddings
 
-        # Create a collection for storing vectors
-        self.collection = self.chroma_client.get_or_create_collection(
-            name="pdf_chunks",
-            metadata={"hnsw:space": "cosine"}
-        )
+def get_embedding(text: str):
+    payload = {
+        "model": MODEL,
+        "prompt": text
+    }
 
-        # Initialize embedding model
-        self.embed_model = OllamaEmbeddings(model="nomic-embed-text")
+    resp = requests.post(OLLAMA_URL, json=payload)
 
-    def add_embeddings(self, chunks):
-        ids = []
-        documents = []
-        embeddings = []
+    if resp.status_code != 200:
+        raise Exception(f"Embedding failed: {resp.text}")
 
-        for idx, chunk in enumerate(chunks):
-            ids.append(f"chunk-{idx}")
-            documents.append(chunk)
-            embedding = self.embed_model.embed_query(chunk)
-            embeddings.append(embedding)
+    data = resp.json()
+    return data["embedding"]
 
-        # Add everything to chroma
-        self.collection.add(
-            ids=ids,
-            documents=documents,
-            embeddings=embeddings
-        )
 
-        print(f"✅ Added {len(chunks)} chunks to ChromaDB!")
-
-    def persist(self):
-        print("📌 Saving vector database to disk...")
-        # Chroma auto-persists, but calling persist ensures safety
-        self.chroma_client.persist()
+if __name__ == "__main__":
+    print("Testing embedding…")
+    emb = get_embedding("Hello, world!")
+    print("Embedding length:", len(emb))

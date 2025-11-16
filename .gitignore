@@ -1,3 +1,20 @@
-venv/
+# Python
 __pycache__/
+*.pyc
+
+# Virtual environment
+venv/
+
+# Chroma DB persistent files
+chroma_store/
+chroma/
+
+# Uploaded PDFs
+data/
+*.pdf
+
+# Streamlit cache
+.streamlit/
+
+# MacOS metadata
 .DS_Store
